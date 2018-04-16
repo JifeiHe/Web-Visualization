@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="author" content="Jiating Chen, Jifei He">
+    <title>Terrorist Attacks in United States</title>
+    <link href="//cdnjs.cloudflare.com/ajax/libs/normalize/3.0.1/normalize.min.css" rel="stylesheet" data-semver="3.0.1" data-require="normalize@*" />
+    
+    <style type="text/css">
+    body{margin: :2%;}
+    #Bottom {text-indent: 1.5em; 
+        color: ; font-size: 18px;
+        margin:5px 40px 50px 40px
+      }
+
+    #interpretation {
+      text-indent: 2em;
+      font-size: 16px;
+      margin:5px 40px 5px 40px;
+      }
+
+    #footnote {
+      text-indent: 2em; 
+      color: #843c39; 
+      font-size: 16px;
+      margin:10px 40px 15px 40px;
+      }
+
+    #chart3 {
+      height: 400px;
+      margin: 0 auto;                                               
+      position: relative;
+      width: 1200px;
+      }
+
+    #chart4 {
+      height: 400px;
+      margin: 0 auto;                                               
+      position: relative;
+      width: 1200px;
+      }
+                                                             
+    .tooltip {                                                        
+      background: white;                                               
+      box-shadow: 0 0 5px #999999;                                    
+      color: #333;                                                    
+      display: none;                                                  
+      font-size: 12px;                                                
+      left: 130px;                                                    
+      padding: 10px;                                                  
+      position: absolute;                                             
+      text-align: center;                                             
+      top: 95px;                                                      
+      width: 80px;                                                    
+      z-index: 10;                                                    
+    } 
+                                                   
+    .legend {
+      font-size: 12px;
+    }
+
+    .tooltip22 {
+      position: absolute;
+      text-align: center;
+      width: 200px;
+      height: 75px;
+      padding: 2px;
+      font: 12px sans-serif;
+      background: lightsteelblue;
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    rect {
+      cursor: pointer;                                              
+      stroke-width: 2;
+    }
+      
+    rect.disabled {                                                 
+      fill: transparent !important;                                 
+    }                                                               
+
+    #main {                                                          
+      width: 1200px;                                                   
+    }   
+    
+    #main2 {                                                          
+      width: 1200px;
+    } 
+
+    .axis .domain {
+      display: none;
+    }
+
+    .axis path {
+    /*display: none;*/}
+
+    .pan rect,
+    .zoom rect {
+      fill: black;
+      opacity: 0.2;
+    }
+      
+    .zoom rect {
+      rx: 5;  
+      ry: 5;
+    }
+
+    .pan text,
+    .zoom text {
+      fill: black;
+      font-size: 18px;
+      text-anchor: middle;
+    }
+
+    .pan:hover rect,
+    .pan:hover text,
+    .zoom:hover rect,
+    .zoom:hover text {
+      fill: blue;
+    }
+  
+    </style>
+  </head>
+
+<body>
+  <h1 align="middle">Terrorist Attacks in United States</h1>
+    
+    <h2 align="middle">Number of Terrorist Attacks by Target in United States (1970-2015)</h2>
+    
+    <div id="chart3" align="center"></div>
+    <script data-require="d3@*" data-semver="3.4.6" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.6/d3.min.js"></script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script>
+      (function(d3) {
+        'use strict';
+
+        var width = 360;
+        var height = 360;
+        var radius = Math.min(width, height) / 2;
+        var donutWidth = 50;
+        var legendRectSize = 18;
+        var legendSpacing = 4;
+
+        var color = d3.scaleOrdinal(d3.schemeCategory20b);
+
+        var svg = d3.select('#chart3')
+          .append('svg')
+          .attr('width', width)
+          .attr('height', height)
+          .append('g')
+          .attr('transform', 'translate(' + (width / 2) +
+            ',' + (height / 2) + ')');
+
+        var arc = d3.arc()
+          .innerRadius(radius - donutWidth)
+          .outerRadius(radius);
+
+        var pie = d3.pie()
+          .value(function(d) { return d.count; })
+          .sort(null);
+
+        var tooltip = d3.select('#chart3')
+          .append('div')
+          .attr('class', 'tooltip');
+
+        tooltip.append('div')
+          .attr('class', 'category');
+
+        tooltip.append('div')
+          .attr('class', 'count');
+
+        tooltip.append('div')
+          .attr('class', 'percent');
+
+        d3.csv('terrorist_attacks_by_targets.csv', function(error, dataset) {
+          dataset.forEach(function(d) {
+            d.count = +d.count;
+            d.enabled = true;                                         
+          });
+
+          var path = svg.selectAll('path')
+            .data(pie(dataset))
+            .enter()
+            .append('path')
+            .attr('d', arc)
+            .attr('fill', function(d, i) {
+              return color(d.data.category);
+            })                                                        
+            .each(function(d) { this._current = d; });                
+
+          path.on('mouseover', function(d) {
+            var total = d3.sum(dataset.map(function(d) {
+              return (d.enabled) ? d.count : 0;                       
+            }));
+            var percent = Math.round(1000 * d.data.count / total) / 10;
+            tooltip.select('.category').html(d.data.category);
+            tooltip.select('.count').html(d.data.count);
+            tooltip.select('.percent').html(percent + '%');
+            tooltip.style('display', 'block');
+          });
+
+          path.on('mouseout', function() {
+            tooltip.style('display', 'none');
+          });
+
+          path.on('mousemove', function(d) {
+            tooltip.style('top', (d3.event.layerY + 10) + 'px')
+              .style('left', (d3.event.layerX + 10) + 'px');
+          });
+
+
+          var legend = svg.selectAll('.legend')
+            .data(color.domain())
+            .enter()
+            .append('g')
+            .attr('class', 'legend')
+            .attr('transform', function(d, i) {
+              var height = legendRectSize + legendSpacing;
+              var offset =  height * color.domain().length / 2;
+              var horz = -2 * legendRectSize;
+              var vert = i * height - offset;
+              return 'translate(' + horz + ',' + vert + ')';
+            });
+
+          legend.append('rect')
+            .attr('width', legendRectSize)
+            .attr('height', legendRectSize)
+            .style('fill', color)
+            .style('stroke', color)                                   
+            .on('click', function(category) {                            
+              var rect = d3.select(this);                             
+              var enabled = true;                                     
+              var totalEnabled = d3.sum(dataset.map(function(d) {     
+                return (d.enabled) ? 1 : 0;                           
+              }));                                                    
+
+              if (rect.attr('class') === 'disabled') {                
+                rect.attr('class', '');                               
+              } else {                                                
+                if (totalEnabled < 2) return;                         
+                rect.attr('class', 'disabled');                       
+                enabled = false;                                      
+              }                                                       
+
+              pie.value(function(d) {                                 
+                if (d.category === category) d.enabled = enabled;           
+                return (d.enabled) ? d.count : 0;                     
+              });                                                     
+
+              path = path.data(pie(dataset));                         
+
+              path.transition()                                       
+                .duration(750)                                        
+                .attrTween('d', function(d) {                         
+                  var interpolate = d3.interpolate(this._current, d); 
+                  this._current = interpolate(0);                     
+                  return function(t) {                                
+                    return arc(interpolate(t));                       
+                  };                                                  
+                });                                                   
+            });                                                       
+
+          legend.append('text')
+            .attr('x', legendRectSize + legendSpacing)
+            .attr('y', legendRectSize - legendSpacing)
+            .text(function(d) { return d; });
+
+        });
+
+      })(window.d3);
+
+
+    </script>
+   <p id='footnote'> Footnote: Filter target categories by selecting/unselecting the <b>small rectangular</b> ahead the text in the legend, in addition, <b>move your cursor</b> over the pie chart to obtain infomation about the particular target category</p>
+    <p id='interpretation'> This pie chart is about the number of terrorist attacks in the United State aggregated by different targets. Obviously, business is the No.1 target in terms of the terrorist attack in the U.S., occupies 29% of the total 2264 terrorist attacks from the year of 1970 to 2015.More specifically, 
+      <ul>
+        <li id='interpretation'>Category Business is included business,Journalists and Media, and NGO</li>
+        <li id='interpretation'>Category Government is included general government and diplomatic government</li>
+        <li id='interpretation'>Category Religion is about religious figures and institutions</li>
+        <li id='interpretation'>Category Transportation is included airports, aircraft, maritime and other transportation</li>
+        <li id='interpretation'>Category Infrastructure is included food or water supply, telecommunication and utilities</li>
+      </ul>
+    </p>
+
+
+
+    <h2 align="middle">Number of Terrorist Attacks by Weapon in United States (1970-2015)</h2>
+    <div id="chart4" align="center"></div>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script>
+      (function(d3) {
+        'use strict';
+
+        var width = 360;
+        var height = 360;
+        var radius = Math.min(width, height) / 2;
+        var donutWidth = 50;
+        var legendRectSize = 18;
+        var legendSpacing = 4;
+
+        var color = d3.scaleOrdinal(d3.schemeCategory20b);
+
+        var svg = d3.select('#chart4')
+          .append('svg')
+          .attr('width', width)
+          .attr('height', height)
+          .append('g')
+          .attr('transform', 'translate(' + (width / 2) +
+            ',' + (height / 2) + ')');
+
+        var arc = d3.arc()
+          .innerRadius(radius - donutWidth)
+          .outerRadius(radius);
+
+        var pie = d3.pie()
+          .value(function(d) { return d.count; })
+          .sort(null);
+
+        var tooltip = d3.select('#chart4')
+          .append('div')
+          .attr('class', 'tooltip');
+
+        tooltip.append('div')
+          .attr('class', 'category');
+
+        tooltip.append('div')
+          .attr('class', 'count');
+
+        tooltip.append('div')
+          .attr('class', 'percent');
+
+        d3.csv('terrorist_attacks_by_weapons.csv', function(error, dataset) {
+          dataset.forEach(function(d) {
+            d.count = +d.count;
+            d.enabled = true;                                         
+          });
+
+          var path = svg.selectAll('path')
+            .data(pie(dataset))
+            .enter()
+            .append('path')
+            .attr('d', arc)
+            .attr('fill', function(d, i) {
+              return color(d.data.category);
+            })                                                        
+            .each(function(d) { this._current = d; });                
+
+          path.on('mouseover', function(d) {
+            var total = d3.sum(dataset.map(function(d) {
+              return (d.enabled) ? d.count : 0;                       
+            }));
+            var percent = Math.round(1000 * d.data.count / total) / 10;
+            tooltip.select('.category').html(d.data.category);
+            tooltip.select('.count').html(d.data.count);
+            tooltip.select('.percent').html(percent + '%');
+            tooltip.style('display', 'block');
+          });
+
+          path.on('mouseout', function() {
+            tooltip.style('display', 'none');
+          });
+
+          path.on('mousemove', function(d) {
+            tooltip.style('top', (d3.event.layerY + 10) + 'px')
+              .style('left', (d3.event.layerX + 10) + 'px');
+          });
+
+
+          var legend = svg.selectAll('.legend')
+            .data(color.domain())
+            .enter()
+            .append('g')
+            .attr('class', 'legend')
+            .attr('transform', function(d, i) {
+              var height = legendRectSize + legendSpacing;
+              var offset =  height * color.domain().length / 2;
+              var horz = -2 * legendRectSize;
+              var vert = i * height - offset;
+              return 'translate(' + horz + ',' + vert + ')';
+            });
+
+          legend.append('rect')
+            .attr('width', legendRectSize)
+            .attr('height', legendRectSize)
+            .style('fill', color)
+            .style('stroke', color)                                   
+            .on('click', function(category) {                            
+              var rect = d3.select(this);                             
+              var enabled = true;                                     
+              var totalEnabled = d3.sum(dataset.map(function(d) {     
+                return (d.enabled) ? 1 : 0;                           
+              }));                                                    
+
+              if (rect.attr('class') === 'disabled') {                
+                rect.attr('class', '');                               
+              } else {                                                
+                if (totalEnabled < 2) return;                         
+                rect.attr('class', 'disabled');                       
+                enabled = false;                                      
+              }                                                       
+
+              pie.value(function(d) {                                 
+                if (d.category === category) d.enabled = enabled;           
+                return (d.enabled) ? d.count : 0;                   
+              });                                                     
+
+              path = path.data(pie(dataset));                         
+
+              path.transition()                                       
+                .duration(750)                                        
+                .attrTween('d', function(d) {                        
+                  var interpolate = d3.interpolate(this._current, d); 
+                  this._current = interpolate(0);                     
+                  return function(t) {                                
+                    return arc(interpolate(t));                       
+                  };                                                  
+                });                                                   
+            });                                                       
+
+          legend.append('text')
+            .attr('x', legendRectSize + legendSpacing)
+            .attr('y', legendRectSize - legendSpacing)
+            .text(function(d) { return d; });
+
+        });
+
+      })(window.d3);
+  </script>
+    <p id='footnote'> Footnote: Filter weapon categories by selecting/unselecting the <b>small rectangular</b> ahead the text in the legend, in addition, <b>move your cursor</b> over the pie chart to obtain information about the particular weapon category</p>
+    <p id='interpretation'> This pie chart is about the number of terrorist attacks in the United State aggregated by different weapons. Obviously, explosives and flammables are the dominant weapons used in the U.S.terrorist attacks, occupy 47.1% and 32.2% respectively of the total 2264 terrorist attacks from the year of 1970 to 2015. More specifically, 
+      <ul>
+        <li id='interpretation'>Category Explosives is included explosives/bombs/dynamite,and sabotage equipment</li>
+        <li id='interpretation'>Category Firearms is included firearms and fake weapons</li>
+        <li id='interpretation'>Category Chemicals is also included rediological</li>
+      </ul>
+    </p> 
+
+  <h2 align="middle">Number of Injuries/Fatalities of U.S. Terrorist Attacks by Weapon (1970-2015)</h2>
+  <div id="main" align="center">
+  <svg id="bar" width="800" height="500"></svg></div>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script>
+    var svg = d3.select("#bar"),
+        margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom,
+        g1 = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var x = d3.scaleBand()
+        .rangeRound([0, width])
+        .paddingInner(0.05)
+        .align(0.1);
+
+    var y = d3.scaleLinear()
+        .rangeRound([height, 0]);
+
+    var z = d3.scaleOrdinal()
+        .range(["#9c9ede", "#8ca252", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+
+    d3.csv("terrorist_attacks_by_weapon_updated.csv", function(d, i, columns) {
+      for (i = 1, t = 0; i < columns.length; ++i) t += d[columns[i]] = +d[columns[i]];
+      d.total = t;
+      return d;
+    }, function(error, data) {
+      if (error) throw error;
+
+      var keys = data.columns.slice(1);
+
+      data.sort(function(a, b) { return b.total - a.total; });
+      x.domain(data.map(function(d) { return d.Categories; }));
+      y.domain([0, d3.max(data, function(d) { return d.total; })]).nice();
+      z.domain(keys);
+
+      g1.append("g")
+        .selectAll("g")
+        .data(d3.stack().keys(keys)(data))
+        .enter().append("g")
+          .attr("fill", function(d) { return z(d.key); })
+        .selectAll("rect")
+        .data(function(d) { return d; })
+        .enter().append("rect")
+          .attr("x", function(d) { return x(d.data.Categories); })
+          .attr("y", function(d) { return y(d[1]); })
+          .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+          .attr("width", x.bandwidth())
+        .on("mouseover", function() { tooltip1.style("display", null); d3.select(this).attr("fill", "#588C73")})
+        .on("mouseout", function(d, i) { tooltip1.style("display", "none");d3.select(this).attr("fill", function() {
+                    return "";
+                });})
+        .on("mousemove", function(d) {
+          console.log(d);
+          var xPosition = d3.mouse(this)[0]- 10;
+          var yPosition = d3.mouse(this)[1]- 10;
+          tooltip1.attr("transform", "translate(" + (xPosition + 10) + "," + yPosition + ")");
+          tooltip1.select("text").text(d[1]-d[0]);;
+
+        })
+        .attr("class", "bar");
+
+      g1.append("g")
+          .attr("class", "axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(x));
+
+      g1.append("g")
+          .attr("class", "axis")
+          .call(d3.axisLeft(y).ticks(null, "s"))
+        .append("text")
+          .attr("x", 2)
+          .attr("y", y(y.ticks().pop()) + 0.5)
+          .attr("dy", "0.32em")
+          .attr("fill", "#000")
+          .attr("font-weight", "bold")
+          .attr("text-anchor", "start");
+
+      var legend1 = g1.append("g")
+          .attr("font-family", "sans-serif")
+          .attr("font-size", 14)
+          .attr("text-anchor", "end")
+        .selectAll("g")
+        .data(keys.slice().reverse())
+        .enter().append("g")
+          .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+      legend1.append("rect")
+          .attr("x", width - 19)
+          .attr("width", 19)
+          .attr("height", 19)
+          .attr("fill", z);
+
+      legend1.append("text")
+          .attr("x", width - 24)
+          .attr("y", 9.5)
+          .attr("dy", "0.32em")
+          .text(function(d) { return d; });
+    });
+
+      var tooltip1 = svg.append("g")
+        .style("display", "none");
+          
+      tooltip1.append("rect")
+        .attr("width", 60)
+        .attr("height", 20)
+        .attr("fill", "white")
+        //.style("opacity", 0.5);
+
+      tooltip1.append("text")
+        .attr("x", 30)
+        .attr("dy", "1.2em")
+        .style("text-anchor", "middle")
+        .attr("font-size", "12px")
+        .attr("font-weight", "bold");
+  </script>
+  <p id='footnote'> Footnote: <b>move your cursor</b> over the bar chart to obtain specifical injuries/fatalities number about the particular weapon category</p>
+  <p id='interpretation'> The bar chart above is about the number of injuries and fatalities of U.S. terrorist attacks, aggregated by different weapons. Even though vehicle only takes up 9 (at 4%) terrorist attacks in the United State, it leads to 14866 people to be wounded, and 3001 to be killed. 14842 injuries and 2998 fatalities were caused by September 11 attacks. </p>
+
+  
+  <h2 align="middle">Number of Injuries/Fatalities of U.S. Terrorist Attacks by Target (1970-2015)</h2>
+  <div id="main2" align="center">
+  <svg id="bar2" width="800" height="500"></svg></div>
+  <script>
+    var svg = d3.select("#bar2"),
+        margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom,
+        g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var x = d3.scaleBand()
+        .rangeRound([0, width])
+        .paddingInner(0.05)
+        .align(0.1);
+
+    var y = d3.scaleLinear()
+        .rangeRound([height, 0]);
+
+    var z1 = d3.scaleOrdinal()
+        .range(["#d6616b", "#e7ba52", "#7b6888", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+
+    d3.csv("terrorist_attacks_by_targets_updated.csv", function(d, i, columns) {
+      for (i = 1, t = 0; i < columns.length; ++i) t += d[columns[i]] = +d[columns[i]];
+      d.total = t;
+      return d;
+    }, function(error, data) {
+      if (error) throw error;
+
+      var keys = data.columns.slice(1);
+
+      data.sort(function(a, b) { return b.total - a.total; });
+      x.domain(data.map(function(d) { return d.Categories; }));
+      y.domain([0, d3.max(data, function(d) { return d.total; })]).nice();
+      z1.domain(keys);
+
+      g.append("g")
+        .selectAll("g")
+        .data(d3.stack().keys(keys)(data))
+        .enter().append("g")
+          .attr("fill", function(d) { return z1(d.key); })
+        .selectAll("rect")
+        .data(function(d) { return d; })
+        .enter().append("rect")
+          .attr("x", function(d) { return x(d.data.Categories); })
+          .attr("y", function(d) { return y(d[1]); })
+          .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+          .attr("width", x.bandwidth())
+        .on("mouseover", function() { tooltip2.style("display", null); d3.select(this).attr("fill", "#588C73")})
+        .on("mouseout", function(d, i) { tooltip2.style("display", "none");d3.select(this).attr("fill", function() {
+                    return "";
+                });})
+        .on("mousemove", function(d) {
+          console.log(d);
+          var xPosition = d3.mouse(this)[0]- 10;
+          var yPosition = d3.mouse(this)[1]- 10;
+          tooltip2.attr("transform", "translate(" + (xPosition + 10) + "," + yPosition + ")");
+          tooltip2.select("text").text(d[1]-d[0]);;
+
+        })
+        .attr("class", "bar2");
+
+      g.append("g")
+          .attr("class", "axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(x));
+
+      g.append("g")
+          .attr("class", "axis")
+          .call(d3.axisLeft(y).ticks(null, "s"))
+        .append("text")
+          .attr("x", 2)
+          .attr("y", y(y.ticks().pop()) + 0.5)
+          .attr("dy", "0.32em")
+          .attr("fill", "#000")
+          .attr("font-weight", "bold")
+          .attr("text-anchor", "start");
+
+      var legend2 = g.append("g")
+          .attr("font-family", "sans-serif")
+          .attr("font-size", 14)
+          .attr("text-anchor", "end")
+        .selectAll("g")
+        .data(keys.slice().reverse())
+        .enter().append("g")
+          .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+      legend2.append("rect")
+          .attr("x", width - 19)
+          .attr("width", 19)
+          .attr("height", 19)
+          .attr("fill", z1);
+
+      legend2.append("text")
+          .attr("x", width - 24)
+          .attr("y", 9.5)
+          .attr("dy", "0.32em")
+          .text(function(d) { return d; });
+    });
+
+      var tooltip2 = svg.append("g")
+        //.attr("class", "tooltip")
+        .style("display", "none");
+          
+      tooltip2.append("rect")
+        .attr("width", 60)
+        .attr("height", 20)
+        .attr("fill", "white")
+
+      tooltip2.append("text")
+        .attr("x", 30)
+        .attr("dy", "1.2em")
+        .style("text-anchor", "middle")
+        .attr("font-size", "12px")
+        .attr("font-weight", "bold");
+  </script>
+
+  <p id='footnote'> Footnote: <b>move your cursor</b> over the bar chart to obtain specifical injuries/fatalities number about the particular target category</p>
+  <p id='interpretation'> The bar chart above is about the number of injuries and fatalities of U.S. terrorist attacks, aggregated by different targets. Again, even though Category Individuals takes up 325 (at 14.4%) terrorist attacks in the United State, it leads to 15315 people to be wounded, and 2913 to be killed. Three of four September 11 attacks in the record are classified 'individuals' in terms of terrorist attack by target.</p>
+
+  <h2 align="middle">Terrorist Attacks by Latitude/Longitude in United States(1970-2015)</h2>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <div id="usmap" align="center"> </div>
+  <script>
+      var tooltip22 = d3.select("#usmap")
+      .append("div")
+      .attr("class","tooltip22")
+
+      //Width and height
+      var w = 1000;
+      var h = 500;
+
+      //Define map projection
+      var projection = d3.geoAlbersUsa()
+                   .translate([0, 0]);
+
+      //Define path generator
+      var path = d3.geoPath()
+               .projection(projection);
+         
+      //Define quantize scale to sort data values into buckets of color
+      var color = d3.scaleQuantize()
+                .range(["rgb(237,248,233)","rgb(186,228,179)","rgb(116,196,118)","rgb(49,163,84)","#328332","rgb(0,109,44)"]);
+                //Colors taken from colorbrewer.js, included in the D3 download
+
+      //Number formatting for population values
+      var formatAsThousands = d3.format(",");  //e.g. converts 123456 to "123,456"
+
+      //Create SVG element
+      //var svg = d3.select("body")
+      var svg = d3.select("#usmap")
+            .append("svg")
+            .attr("width", w)
+            .attr("height", h);    
+
+
+      //Define map projection
+      var projection = d3.geoAlbersUsa()
+                   .translate([0, 0]);
+
+      //Define path generator
+      var path = d3.geoPath()
+               .projection(projection);
+         
+      //Define quantize scale to sort data values into buckets of color
+      var color = d3.scaleQuantize()
+                .range(["rgb(237,248,233)","rgb(186,228,179)","rgb(116,196,118)","rgb(49,163,84)","#328332","rgb(0,109,44)"]);
+                //Colors taken from colorbrewer.js, included in the D3 download
+
+      //Number formatting for population values
+      var formatAsThousands = d3.format(",");  //e.g. converts 123456 to "123,456"
+
+
+
+      //Define what to do when panning or zooming
+      var zooming = function(d) {
+
+        //Log out d3.event.transform, so you can see all the goodies inside
+        //console.log(d3.event.transform);
+
+        //New offset array
+        var offset = [d3.event.transform.x, d3.event.transform.y];
+
+        //Calculate new scale
+        var newScale = d3.event.transform.k * 2000;
+
+        //Update projection with new offset and scale
+        projection.translate(offset)
+              .scale(newScale);
+
+        //Update all paths and circles
+        svg.selectAll("path")
+          .attr("d", path);
+
+        svg.selectAll("circle")
+          .attr("cx", function(d) {
+            return projection([d.longitude, d.latitude])[0];
+          })
+          .attr("cy", function(d) {
+            return projection([d.longitude, d.latitude])[1];
+          });
+      }
+
+      //Then define the zoom behavior
+      var zoom = d3.zoom()
+             .scaleExtent([ 0.2, 2.0 ])
+             .translateExtent([[ -1200, -700 ], [ 1200, 700 ]])
+             .on("zoom", zooming);
+
+      //The center of the country, roughly
+      var center = projection([-97.0, 39.0]);
+
+      //Create a container in which all zoom-able elements will live
+      var map11 = svg.append("g")
+            .attr("id", "map11")
+            .call(zoom)  //Bind the zoom behavior
+              .call(zoom.transform, d3.zoomIdentity  //Then apply the initial transform
+              .translate(w/2, h/2)
+              .scale(0.25)
+              .translate(-center[0], -center[1]));
+
+      //Create a new, invisible background rect to catch zoom events
+      map11.append("rect")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", w)
+        .attr("height", h)
+        .attr("opacity", 0);
+
+      //Load in agriculture data
+      d3.csv("USA_State_Count.csv", function(data) {
+
+        //Set input domain for color scale
+        color.domain([
+          d3.min(data, function(d) { return d.value; }), 
+          d3.max(data, function(d) { return d.value; })
+        ]);
+
+        //Load in GeoJSON data
+        d3.json("us-states.json", function(json) {
+
+          //Merge the ag. data and GeoJSON
+          //Loop through once for each ag. data value
+          for (var i = 0; i < data.length; i++) {
+        
+            var dataState = data[i].state;        //Grab state name
+            var dataValue = parseFloat(data[i].value);  //Grab data value, and convert from string to float
+        
+            //Find the corresponding state inside the GeoJSON
+            for (var j = 0; j < json.features.length; j++) {
+            
+              var jsonState = json.features[j].properties.name;
+        
+              if (dataState == jsonState) {
+            
+                //Copy the data value into the JSON
+                json.features[j].properties.value = dataValue;
+                
+                //Stop looking through the JSON
+                break;
+                
+              }
+            }   
+          }
+
+          //Bind data and create one path per GeoJSON feature
+          map11.selectAll("path")
+             .data(json.features)
+             .enter()
+             .append("path")
+             .attr("d", path)
+             .style("fill", function(d) {
+                //Get data value
+                var value = d.properties.value;
+                
+                if (value) {
+                  //If value exists…
+                  return color(value);
+                } else {
+                  //If value is undefined…
+                  return "#ccc";
+                }
+             });
+
+          //Load in cities data
+          d3.csv("terror_usa.csv", function(data) {
+            
+            // map.selectAll("circle")
+            //    .data(data)
+            //    .enter()
+            //    .append("circle")
+            //    .attr("cx", function(d) {
+            //     return projection([d.lon, d.lat])[0];
+            //    })
+            //    .attr("cy", function(d) {
+            //     return projection([d.lon, d.lat])[1];
+            //    })
+            //    .attr("r", function(d) {
+            //    return Math.sqrt(parseInt(d.population) * 0.00004);
+            //    })
+            //    .style("fill", "yellow")
+            //    .style("stroke", "gray")
+            //    .style("stroke-width", 0.25)
+            //    .style("opacity", 0.75)
+            //    .append("title")      //Simple tooltip
+            //    .text(function(d) {
+            //    return d.place + ": Pop. " + formatAsThousands(d.population);
+            //    });
+
+            svg.selectAll("dot")
+                 .data(data)
+               .enter().append("circle")
+                 .attr("r", 3)
+               .style("fill", "yellow")
+               .style("stroke", "gray")
+               .style("stroke-width", 0.25)
+               .style("opacity", 0.75)
+               .attr("cx", function(d) {
+                 return projection([d.longitude, d.latitude])[0];
+               })
+               .attr("cy", function(d) {
+                 return projection([d.longitude, d.latitude])[1];
+               })
+                 .on("mouseover", function(d) {
+                   //div.transition()
+                   tooltip22.transition()
+                     .duration(200)
+                     .style("opacity", .9);
+                   //div.html("Weapon: "+d.weapsubtype1_txt + "<br/>" + "Target: "+d.target+"<br/>" + "Fatalities: "+d.fatalities+"<br/>" + "Injuries: "+d.injuries+"<br/>" + "Date: "+d.date)
+
+
+                  tooltip22.html("Weapon: "+d.weapsubtype1_txt + "<br/>" + "Target: "+d.target+"<br/>" + "Fatalities: "+d.fatalities+"<br/>" + "Injuries: "+d.injuries+"<br/>" + "Date: "+d.date)
+
+                     .style("left", (d3.event.pageX) + "px")
+                     .style("top", (d3.event.pageY - 28) + "px");
+                   })
+                 .on("mouseout", function(d) {
+                   //div.transition()
+                   tooltip22.transition()
+
+                     .duration(500)
+                     .style("opacity", 0);
+                   });
+            
+            createPanButtons();
+            createZoomButtons();
+
+          });
+
+      
+        });
+      
+      });
+      
+      //Create panning buttons
+      var createPanButtons = function() {
+
+        //Create the clickable groups
+
+        //North
+        var north = svg.append("g")
+          .attr("class", "pan") //All share the 'pan' class
+          .attr("id", "north"); //The ID will tell us which direction to head
+
+        north.append("rect")
+          .attr("x", 0)
+          .attr("y", 0)
+          .attr("width", w)
+          .attr("height", 30);
+
+        north.append("text")
+          .attr("x", w/2)
+          .attr("y", 20)
+          .html("&uarr;")
+        
+        //South
+        var south = svg.append("g")
+          .attr("class", "pan")
+          .attr("id", "south");
+
+        south.append("rect")
+          .attr("x", 0)
+          .attr("y", h - 30)
+          .attr("width", w)
+          .attr("height", 30);
+
+        south.append("text")
+          .attr("x", w/2)
+          .attr("y", h - 10)
+          .html("&darr;")
+
+        //West
+        var west = svg.append("g")
+          .attr("class", "pan")
+          .attr("id", "west");
+
+        west.append("rect")
+          .attr("x", 0)
+          .attr("y", 30)
+          .attr("width", 30)
+          .attr("height", h - 60);
+
+        west.append("text")
+          .attr("x", 15)
+          .attr("y", h/2)
+          .html("&larr;")
+
+        //East
+        var east = svg.append("g")
+          .attr("class", "pan")
+          .attr("id", "east");
+
+        east.append("rect")
+          .attr("x", w - 30)
+          .attr("y", 30)
+          .attr("width", 30)
+          .attr("height", h - 60);
+
+        east.append("text")
+          .attr("x", w - 15)
+          .attr("y", h/2)
+          .html("&rarr;")
+
+        //Panning interaction
+
+        d3.selectAll(".pan")
+          .on("click", function() {
+
+            //Set how much to move on each click
+            var moveAmount = 50;
+            
+            //Set x/y to zero for now
+            var x = 0;
+            var y = 0;
+            
+            //Which way are we headed?
+            var direction = d3.select(this).attr("id");
+
+            //Modify the offset, depending on the direction
+            switch (direction) {
+              case "north":
+                y += moveAmount;  //Increase y offset
+                break;
+              case "south":
+                y -= moveAmount;  //Decrease y offset
+                break;
+              case "west":
+                x += moveAmount;  //Increase x offset
+                break;
+              case "east":
+                x -= moveAmount;  //Decrease x offset
+                break;
+              default:
+                break;
+            }
+
+            //This triggers a zoom event, translating by x, y
+            map11.transition()
+              .call(zoom.translateBy, x, y);
+
+          });
+
+      };
+      
+      //Create zoom buttons
+      var createZoomButtons = function() {
+
+        //Create the clickable groups
+
+        //Zoom in button
+        var zoomIn = svg.append("g")
+          .attr("class", "zoom")  //All share the 'zoom' class
+          .attr("id", "in")   //The ID will tell us which direction to head
+          .attr("transform", "translate(" + (w - 110) + "," + (h - 70) + ")");
+
+        zoomIn.append("rect")
+          .attr("x", 0)
+          .attr("y", 0)
+          .attr("width", 30)
+          .attr("height", 30);
+
+        zoomIn.append("text")
+          .attr("x", 15)
+          .attr("y", 20)
+          .text("+");
+        
+        //Zoom out button
+        var zoomOut = svg.append("g")
+          .attr("class", "zoom")
+          .attr("id", "out")
+          .attr("transform", "translate(" + (w - 70) + "," + (h - 70) + ")");
+
+        zoomOut.append("rect")
+          .attr("x", 0)
+          .attr("y", 0)
+          .attr("width", 30)
+          .attr("height", 30);
+
+        zoomOut.append("text")
+          .attr("x", 15)
+          .attr("y", 20)
+          .html("&ndash;");
+
+        //Zooming interaction
+        d3.selectAll(".zoom")
+          .on("click", function() {
+
+            //Set how much to scale on each click
+            var scaleFactor;
+            
+            //Which way are we headed?
+            var direction = d3.select(this).attr("id");
+
+            //Modify the k scale value, depending on the direction
+            switch (direction) {
+              case "in":
+                scaleFactor = 1.5;
+                break;
+              case "out":
+                scaleFactor = 0.75;
+                break;
+              default:
+                break;
+            }
+
+            //This triggers a zoom event, scaling by 'scaleFactor'
+            map11.transition()
+              .call(zoom.scaleBy, scaleFactor);
+
+          });
+
+      };
+
+  </script>
+  <p id='footnote'> Footnote: Zoom in/out the U.S. map by using the <b>'+/-'</b> button in the lower right corner. In addition, move your <b>cursor</b> over the dots to obtain specific information about the specific event.</p>
+  <p id='interpretation'>The map is colored according to the number of terrorist attacks in different states. In addition, the attack events are marked as dots on the map. One dot represents one event. More attacks the state has, the darker it is, and more dots it has. Obviously, Washington, California, Illinois and New York and Florida are the states with most attacks.  </p>
+
+  <hr>
+  <p id='Bottom'>By Jiating Chen, Jifei He</p>
+  
+</body>
+</html>
